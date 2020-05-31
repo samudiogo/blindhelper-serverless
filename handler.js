@@ -5,12 +5,13 @@ const aws = require('aws-sdk');
 const Joi = require('@hapi/joi');
 const decoratorValidator = require('./utils/decoratorValidator');
 const globalEnum = require('./utils/globalEnum');
-
+const { get } = require('axios');
 const rekognitionService = new aws.Rekognition();
 
 class Handler {
   constructor({
     rekogSvc,
+    translatorSvc,
   }) {
     this._rekoService = rekogSvc;
   }
@@ -26,9 +27,23 @@ class Handler {
 
   async getImageBufferFromUrl(imageUrl) {
 
+    const response = await get(imageUrl, { responseType: 'arraybuffer' });
+
+    const buffer = Buffer.from(response.data, 'base64');
+
+    return buffer;
+
   }
 
   async detectImageFromBuffer(buffer) {
+
+    const result = await this._rekoService.detectLabels({ Image: { bytes: buffer } }).promise();
+
+    const workingItems = result.labels.filter(({ Confidence }) => Confidence > 80);
+
+    const names = workingItems.map(({ Name }) => Name).join(' and ');
+
+    return { names, workingItems };
 
   }
 
