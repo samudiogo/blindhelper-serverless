@@ -74,4 +74,4 @@ class Handler {
 
 const myHandler = new Handler({ rekogSvc: rekognitionService });
 
-module.exports.main = decoratorValidator(myHandler.main.bind(myHandler), Handler.validator(), globalEnum.ARG_TYPE.QUERYSTRING)
+module.exports.main = decoratorValidator(myHandler.main.bind(myHandler), Handler.validator(), globalEnum.ARG_TYPE.QUERYSTRING);

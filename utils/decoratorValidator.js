@@ -2,8 +2,13 @@ const decoratorValidator = (fn, schema, argsType) => {
     return async function (event) {
 
         try {
+            let data = {};
 
-            const data = JSON.parse(event[argsType]);
+            if(typeof event[argsType] === 'string') {
+                data = JSON.parse(event[argsType]);
+            } else {
+                data = event[argsType];
+            }
 
             const res = await schema.validate(data, { abortEarly: true });
 
