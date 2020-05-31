@@ -7,13 +7,14 @@ const decoratorValidator = require('./utils/decoratorValidator');
 const globalEnum = require('./utils/globalEnum');
 const { get } = require('axios');
 const rekognitionService = new aws.Rekognition();
-
+const translateService = new aws.Translate();
 class Handler {
   constructor({
     rekogSvc,
     translatorSvc,
   }) {
     this._rekoService = rekogSvc;
+    this._translatorService = translatorSvc;
   }
 
   // validation:
@@ -49,10 +50,29 @@ class Handler {
 
   async translateText(text) {
 
+    const translateParams = {
+      SourceLanguageCode: 'en',
+      TargetLanguageCode: 'pt',
+      Text: text
+    };
+
+    const {TranslatedText} = await this._translatorService.translateText(translateParams).promise();
+
+    return TranslatedText.split(' e ');
   }
 
-  formatTextResults(text, workingItems) {
+  formatTextResults(texts, workingItems) {
 
+    const finalText= [];
+
+    for(const indextTxt in texts) {
+      const namePt = texts[indextTxt];
+      const confidence  = workingItems[indextTxt].Confidence;
+
+      finalText.push(`${confidence.toFixed(2)}% de ser do tipo ${namePt}`)
+    }
+
+    return finalText;
   }
 
   handlerSuccess(data) {
@@ -87,6 +107,6 @@ class Handler {
   }
 }
 
-const myHandler = new Handler({ rekogSvc: rekognitionService });
+const myHandler = new Handler({ rekogSvc: rekognitionService, translatorSvc: translateService });
 
 module.exports.main = decoratorValidator(myHandler.main.bind(myHandler), Handler.validator(), globalEnum.ARG_TYPE.QUERYSTRING);
