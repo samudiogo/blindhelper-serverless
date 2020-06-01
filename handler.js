@@ -26,7 +26,7 @@ class Handler {
   }
 
 
-  async getImageBufferFromUrl(imageUrl) {
+  async getImageBufferFromUrlAsync(imageUrl) {
 
     const response = await get(imageUrl, { responseType: 'arraybuffer' });
 
@@ -36,11 +36,11 @@ class Handler {
 
   }
 
-  async detectImageFromBuffer(buffer) {
+  async detectImageFromBufferAsync(buffer) {
 
-    const result = await this._rekoService.detectLabels({ Image: { bytes: buffer } }).promise();
+    const result = await this._rekoService.detectLabels({ Image: { Bytes: buffer } }).promise();
 
-    const workingItems = result.labels.filter(({ Confidence }) => Confidence > 80);
+    const workingItems = result.Labels.filter(({ Confidence }) => Confidence > 80);
 
     const names = workingItems.map(({ Name }) => Name).join(' and ');
 
@@ -48,7 +48,7 @@ class Handler {
 
   }
 
-  async translateText(text) {
+  async translateTextAsync(text) {
 
     const translateParams = {
       SourceLanguageCode: 'en',
@@ -56,18 +56,18 @@ class Handler {
       Text: text
     };
 
-    const {TranslatedText} = await this._translatorService.translateText(translateParams).promise();
+    const { TranslatedText } = await this._translatorService.translateText(translateParams).promise();
 
     return TranslatedText.split(' e ');
   }
 
   formatTextResults(texts, workingItems) {
 
-    const finalText= [];
+    const finalText = [];
 
-    for(const indextTxt in texts) {
+    for (const indextTxt in texts) {
       const namePt = texts[indextTxt];
-      const confidence  = workingItems[indextTxt].Confidence;
+      const confidence = workingItems[indextTxt].Confidence;
 
       finalText.push(`${confidence.toFixed(2)}% de ser do tipo ${namePt}`)
     }
@@ -95,9 +95,18 @@ class Handler {
 
     try {
 
-      const data = event.queryStringParameters;
+      const { imageUrl } = event.queryStringParameters;
 
-      return this.handlerSuccess(data);
+      const imgBuffer = await this.getImageBufferFromUrlAsync(imageUrl);
+
+      const { names, workingItems } = await this.detectImageFromBufferAsync(imgBuffer);
+
+      const texts = await this.translateTextAsync(names);
+
+      const finalText = this.formatTextResults(texts, workingItems);
+
+      return this.handlerSuccess(finalText);
+
 
 
     } catch (error) {
